@@ -38,3 +38,6 @@ src/update_db.py
 test_data/image.jpg
 test_data/Trance2.html
 test_data/Trance2s.html
+src/plugins/trance_test.py
+src/plugins/trance.py
+.settings
