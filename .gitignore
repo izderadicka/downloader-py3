@@ -27,5 +27,14 @@ RCS
 RCSLOG
 SCCS
 _$*
-
 data
+src/merge_files.py
+src/copy_files_per_list.py
+src/merge_files.py
+src/sendmail.py
+src/test
+src/test.unfinished
+src/update_db.py
+test_data/image.jpg
+test_data/Trance2.html
+test_data/Trance2s.html
