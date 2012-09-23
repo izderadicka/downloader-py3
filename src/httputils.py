@@ -255,6 +255,7 @@ class LinksSpider:
         self.on_next_page(url)
         if not url:
             #self._save_url('None')
+            logging.info('Last page reached on page %s', self.curr_url)
             return False
         
         self.page=self.client.load_page(url)

@@ -79,6 +79,10 @@ def main():
         sys.exit(2)
     base_dir=args[0]
     
+    if not os.path.exists(base_dir):
+        logging.fatal('The output directory %s does not exists, exiting', base_dir)
+        sys.exit(3)
+    
     if options.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     if options.log:

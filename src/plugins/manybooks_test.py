@@ -36,8 +36,10 @@ class Test(unittest.TestCase):
         
         self.assertEqual(url, 'http://manybooks.net/language.php?code=en&s=2')
         
-    
+        spider=TestSpider('../../test_data/manybooks5.html')
+        url=spider.next_page_url(spider.page)
         
+        self.assertTrue(url)
         
 
 
