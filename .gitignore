@@ -41,3 +41,4 @@ test_data/Trance2s.html
 src/plugins/trance_test.py
 src/plugins/trance.py
 .settings
+test_data/share_send.html

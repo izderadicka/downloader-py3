@@ -189,6 +189,9 @@ class TestSpider():
     def next_page(self):
         return False
 
+class SkipLink(Exception):
+    pass
+
 class LinksSpider:
     def __init__(self, client, url, last_page_file=None):
         self.client=client
@@ -200,6 +203,8 @@ class LinksSpider:
                 if restored_url=='None': 
                     self.links_generator=None
                     return
+                else:
+                    restored_url= self.url_restored(restored_url)
                 url= restored_url or url
        
         self.page=client.load_page(url)
@@ -209,6 +214,10 @@ class LinksSpider:
         self.curr_url=url
         self.links_generator=self.next_link(self.page)
         self.stopping=False
+        
+    def url_restored(self, restored_url):
+        """To be overridden if derived class need to modify restored url"""
+        return restored_url
     
     def stop(self):
         self.stopping=True
@@ -227,15 +236,18 @@ class LinksSpider:
         raise NotImplemented
         
     def __next__(self):
-        if not self.links_generator or self.stopping:
-            raise StopIteration
-        try:
-            return self.postprocess_link(*next(self.links_generator))
-        except StopIteration:
-            if self.next_page():
-                return self.__next__()
-            else:
+        
+        while True:
+            if not self.links_generator or self.stopping:
                 raise StopIteration
+            try:
+                return self.postprocess_link(*next(self.links_generator))
+                break
+            except StopIteration:
+                if not self.next_page():
+                    raise StopIteration
+            except SkipLink:
+                pass
     def postprocess_link(self, link, metadata):
         return link, metadata    
     
