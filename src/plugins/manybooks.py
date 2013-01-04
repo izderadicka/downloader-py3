@@ -113,6 +113,7 @@ class MySpider(LinksSpider):
     # or anything else needed
     # link, metadata is tuple returned by next_link    
     # must return (link, metadata) tuple 
+    # if for any reason link should not be downloaded method should  raise SkipLink
     def postprocess_link(self, link, metadata):
         if not metadata.get( 'author'):
             metadata['author']='Unknown Author'
@@ -135,7 +136,9 @@ def _meta_to_filename(base_dir,metadata, ext):
 # link is a link to file
 # metadata is a dictionary of metadata as returned by MySpider.next_link
 # base_dir is directory to save file
-def save_file(client,link, metadata, base_dir):
+# context - get access to worker running this function 
+#           context.sleeper.sleep - can be used to sleep for x seconds
+def save_file(client,link, metadata, base_dir, context=None):
     filename=_meta_to_filename(base_dir, metadata, '.epub')
     data={'book':'1:epub:.epub:epub', 'tid': metadata['id']}
     client.save_file(BASE_URL+'/_scripts/send.php', filename, data,refer_url=link)

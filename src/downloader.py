@@ -36,8 +36,9 @@ plugin_points=['START_URL', 'REPEATS', 'MEAN_WAIT', 'MAX_WAIT',
 
 stop=False
 
-def interrupt(tp):
-    tp.stop()
+def interrupt(*args):
+    for stopable in args:
+        stopable.stop()
     global stop
     stop=True
     logging.info('Interrupting program by timer')
@@ -108,17 +109,16 @@ def main():
                      plugin.DOWN_THREADS,options.resume, plugin.MAX_QUEUE_SIZE)
     timer=None
     if options.stop_after:
-        timer=threading.Timer(int(options.stop_after)*60, interrupt, args=[pool])
+        timer=threading.Timer(int(options.stop_after)*60, interrupt, args=[pool, client, client2])
         timer.daemon=True
         timer.start()
-    
-    for link, metadata in spider:
-        logging.debug('Got id %s' % metadata['id'])
-        try:
+    try:
+        for link, metadata in spider:
+            logging.debug('Got id %s' % metadata['id'])
             pool.add_task(link, metadata, base_dir)
-        except Interrupted:
-            logging.info('Queue interrupted - leaving links parsing')
-            break
+    except Interrupted:
+        logging.info('Main loop interrupted - leaving')
+            
         
     try:
         pool.wait_completion(True)

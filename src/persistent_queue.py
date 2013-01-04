@@ -8,6 +8,7 @@ import shelve
 import sys
 import os
 import uuid
+import time
 # dbm.gnu and dbm.dump basically behaves fine if close is not called, ndbm loose data
 try:
     import dbm.gnu as db
@@ -279,6 +280,20 @@ class PersistentQueue(Queue):
         self.queue.close()
         self.unfinished.close()
         
+class Sleeper(object):
+    def __init__(self, interval=10): 
+        self.stopping=False
+        self.interval=interval
+        
+    def sleep(self, secs):
+        wake_at=time.time()+secs
+        while time.time()<wake_at:
+            to_sleep=min(self.interval, wake_at-time.time())
+            time.sleep(to_sleep)
+            if self.stopping:
+                raise Interrupted('Sleeper interrupted')
+    def stop(self):
+        self.stopping=True
         
 class Worker(threading.Thread):
     
@@ -288,6 +303,7 @@ class Worker(threading.Thread):
         self.daemon = True
         self.running= True
         self.callable=callable
+        self.sleeper=Sleeper()
         self.start()
     
     def run(self):
@@ -298,12 +314,16 @@ class Worker(threading.Thread):
                 log.info('Queue interrrupted, exiting thread %s' %threading.current_thread().name)
                 break
             try: 
-                self.callable(*args)
+                self.callable(*args, context=self)
+            except Interrupted:
+                log.info('Task interrupted, exiting thread')
+                return
             except Exception: 
                 log.exception('Exception while running thread')
             self.tasks.task_done(tid)
     def stop(self):
         self.running=False
+        self.sleeper.stop()
         
 
 class ThreadPool:

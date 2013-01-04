@@ -10,10 +10,11 @@ import gzip
 from io import BytesIO
 import random
 from http.cookiejar import CookieJar, Cookie
-from time import sleep, time
+from time import time
 import functools 
 import os.path, os
 from http.client import BadStatusLine, IncompleteRead
+from persistent_queue import Sleeper, Interrupted
 
 
 class ResponseProxy():
@@ -89,6 +90,7 @@ class HTTPClient:
         self.last_request_time=0
         self.average_wait_between_requests=average_wait_between_requests
         self.max_wait_between_requests=max_wait_between_requests
+        self.sleeper=Sleeper()
     
     class Error(BaseException): pass
     class AdditionalHeaders(urllib2.BaseHandler):
@@ -122,7 +124,7 @@ class HTTPClient:
         pause=pause-time_from_last_request
         if pause>0:
             logging.debug('Waiting %f seconds to %s'% (pause, url))
-            sleep(pause)
+            self.sleeper.sleep(pause)
         self.last_request_time=time()
         
     def open_url(self, url, post_args=None, timeout=30, resume=None, refer_url=None):
@@ -142,7 +144,7 @@ class HTTPClient:
                 pause=self._get_random_interval(self.average_wait_between_requests, self.max_wait_between_requests)
                 logging.warn('IO or HTTPError (%s) while trying to get url %s, will retry in %f secs' % (str(e),url, pause))
                 retries-=1
-                sleep(pause)
+                self.sleeper.sleep(pause)
                 self.last_request_time=time()
         if not res:
             raise HTTPClient.Error('Cannot load resource %s' % url)
@@ -177,6 +179,9 @@ class HTTPClient:
         logging.debug('Loaded page from url %s' % url)
         pg=BeautifulSoup(data, 'lxml')
         return pg
+    
+    def stop(self):
+        self.sleeper.stop()
 
 
 class TestSpider():
@@ -241,13 +246,15 @@ class LinksSpider:
             if not self.links_generator or self.stopping:
                 raise StopIteration
             try:
-                return self.postprocess_link(*next(self.links_generator))
+                next_link=next(self.links_generator)
+                return self.postprocess_link(*next_link)
                 break
             except StopIteration:
                 if not self.next_page():
                     raise StopIteration
             except SkipLink:
                 pass
+                
     def postprocess_link(self, link, metadata):
         return link, metadata    
     
