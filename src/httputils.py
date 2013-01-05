@@ -20,7 +20,14 @@ from persistent_queue import Sleeper, Interrupted
 class ResponseProxy():
     def __init__(self, req):
         self._info=req.info()
-        self._data=BytesIO(req.read())
+        
+        if self._info.get('Content-Encoding')=='gzip' or  \
+        self._info.get('Content-Encoding')=='deflate':
+            data=decode_data(req);
+            del self._info['Content-Encoding']
+        else:
+            data=req.read()
+        self._data=BytesIO(data)
         req.close()
         self.url=req.geturl()
         self.code, self.msg= req.code, req.msg
@@ -54,7 +61,7 @@ class HTTPEquivProcessor(BaseHandler):
         
         http_message = response.info()
         r=response
-        ct_hdrs = http_message.get("content-type")
+        ct_hdrs = http_message.get("content-type").split(';')[0]
         if ct_hdrs in ('text/html', 'text/xhtml'):
             r=ResponseProxy(response)
            
@@ -74,7 +81,16 @@ class HTTPEquivProcessor(BaseHandler):
 
     https_response = http_response
     
-
+def decode_data(res):
+    header=res.info()
+    data=res.read()
+    if header.get('Content-Encoding')=='gzip':
+        tmp_stream=gzip.GzipFile(fileobj=BytesIO(data))
+        data=tmp_stream.read()
+        
+    elif header.get('Content-Encoding')=='deflate':
+        data = zlib.decompress(data)
+    return data
 
 
 #Single threaded client 
@@ -166,15 +182,7 @@ class HTTPClient:
     def load_page(self,url, post_args=None, timeout=None):
         
         res=self.open_url(url, post_args, timeout)        
-            
-        header=res.info()
-        data=res.read()
-        if header.get('Content-Encoding')=='gzip':
-            tmp_stream=gzip.GzipFile(fileobj=BytesIO(data))
-            data=tmp_stream.read()
-            
-        elif header.get('Content-Encoding')=='deflate':
-            data = zlib.decompress(data)
+        data=decode_data(res)
             
         logging.debug('Loaded page from url %s' % url)
         pg=BeautifulSoup(data, 'lxml')

@@ -42,3 +42,4 @@ src/plugins/trance_test.py
 src/plugins/trance.py
 .settings
 test_data/share_send.html
+src/plugins/test_cookie.py
