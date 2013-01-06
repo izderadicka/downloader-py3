@@ -15,7 +15,26 @@ import functools
 import os.path, os
 from http.client import BadStatusLine, IncompleteRead
 from persistent_queue import Sleeper, Interrupted
+import socket
+import signal
 
+
+class Timeout():
+    """Timeout class using ALARM signal"""
+    class Timeout(Exception): pass
+    
+    def __init__(self, sec):
+        self.sec = sec
+    
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.raise_timeout)
+        signal.alarm(self.sec)
+    
+    def __exit__(self, *args):
+        signal.alarm(0) # disable alarm
+    
+    def raise_timeout(self, *args):
+        raise Timeout.Timeout()
 
 class ResponseProxy():
     def __init__(self, req):
@@ -98,7 +117,7 @@ def decode_data(res):
 class HTTPClient:
     global_cookies_jar=CookieJar()
     def __init__(self, proxy=None, no_proxy=False, repeats_on_failure=5,
-                 average_wait_between_requests=0, max_wait_between_requests=0):
+                 average_wait_between_requests=0, max_wait_between_requests=0, timeout=60):
         self.repeats_on_failure=repeats_on_failure
         self.proxy=proxy
         self.no_proxy=no_proxy
@@ -107,6 +126,7 @@ class HTTPClient:
         self.average_wait_between_requests=average_wait_between_requests
         self.max_wait_between_requests=max_wait_between_requests
         self.sleeper=Sleeper()
+        self.timeout=timeout
     
     class Error(BaseException): pass
     class AdditionalHeaders(urllib2.BaseHandler):
@@ -143,7 +163,7 @@ class HTTPClient:
             self.sleeper.sleep(pause)
         self.last_request_time=time()
         
-    def open_url(self, url, post_args=None, timeout=30, resume=None, refer_url=None):
+    def open_url(self, url, post_args=None, resume=None, refer_url=None):
         if post_args:
             post_args=bytes(urlencode(post_args), 'UTF-8')
         retries=self.repeats_on_failure
@@ -153,10 +173,11 @@ class HTTPClient:
             req.add_header('Referer', refer_url)
         self._delay(url)
         while retries:   
-            try: 
-                res=self.opener.open(req, timeout=timeout)
+            try:
+                #with Timeout(timeout+1) : # sometimes socket timeout is not working
+                res=self.opener.open(req, timeout=self.timeout)
                 break
-            except (IOError, urllib2.HTTPError, BadStatusLine, IncompleteRead) as e:
+            except (IOError, urllib2.HTTPError, BadStatusLine, IncompleteRead, socket.timeout) as e:
                 pause=self._get_random_interval(self.average_wait_between_requests, self.max_wait_between_requests)
                 logging.warn('IO or HTTPError (%s) while trying to get url %s, will retry in %f secs' % (str(e),url, pause))
                 retries-=1
@@ -166,8 +187,8 @@ class HTTPClient:
             raise HTTPClient.Error('Cannot load resource %s' % url)
         return res
     
-    def save_file(self, url, filename, post_args=None, timeout=None, resume=True, refer_url=None): 
-        res=self.open_url(url, post_args, timeout, resume, refer_url)
+    def save_file(self, url, filename, post_args=None, resume=True, refer_url=None): 
+        res=self.open_url(url, post_args, resume, refer_url)
         p,f=os.path.split(filename)
         if not os.path.exists(p):
             os.makedirs(p)
@@ -179,9 +200,9 @@ class HTTPClient:
                 f.write(r)
            
         
-    def load_page(self,url, post_args=None, timeout=None):
+    def load_page(self,url, post_args=None):
         
-        res=self.open_url(url, post_args, timeout)        
+        res=self.open_url(url, post_args)        
         data=decode_data(res)
             
         logging.debug('Loaded page from url %s' % url)
