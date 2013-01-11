@@ -80,7 +80,10 @@ class HTTPEquivProcessor(BaseHandler):
         
         http_message = response.info()
         r=response
-        ct_hdrs = http_message.get("content-type").split(';')[0]
+        ct_hdrs = http_message.get("Content-Type")
+        if not ct_hdrs:
+            return r
+        ct_hdrs = ct_hdrs.split(';')[0]
         if ct_hdrs in ('text/html', 'text/xhtml'):
             r=ResponseProxy(response)
            

@@ -122,6 +122,7 @@ def main():
         
     try:
         pool.wait_completion(True)
+        logging.debug("Pool should finish all tasks - %d" % pool.tasks.unfinished_tasks)
     except Interrupted:
         logging.info('Waiting for threads to complete')
         pool.join(True)

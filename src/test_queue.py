@@ -10,7 +10,8 @@ import queue
 import time
 import random
 import threading
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 class Counter():
     def __init__(self):
@@ -194,8 +195,8 @@ class Test(unittest.TestCase):
     def testTP2(self):
          
         c=Counter()
-        def print_number(n):
-            time.sleep(rand_wait())
+        def print_number(n,context=None):
+            context.sleeper.sleep(rand_wait())
             print('thread %s : %d' %(threading.current_thread().name,n))
             c.increase()
         
@@ -208,7 +209,7 @@ class Test(unittest.TestCase):
         
         self.assertTrue(tp.tasks.qsize()>0)
         self.assertTrue(c()>0)
-        self.assertEqual(len(tp.tasks.unfinished),0)
+        self.assertEqual(len(tp.tasks.unfinished),5)
         
         tp.close()
         tp=ThreadPool('test', print_number, 5)
@@ -222,9 +223,9 @@ class Test(unittest.TestCase):
     def testTP3(self):
         
         c=Counter()       
-        def print_number(n):
+        def print_number(n, context=None):
             
-            time.sleep(rand_wait())
+            context.sleeper.sleep(rand_wait())
             print('thread %s : %d' %(threading.current_thread().name,n))
             c.increase()
             
@@ -245,7 +246,7 @@ class Test(unittest.TestCase):
         
         self.assertTrue(tp.tasks.qsize()>0)
         self.assertTrue(c()>0)
-        self.assertEqual(len(tp.tasks.unfinished),0)
+        self.assertEqual(len(tp.tasks.unfinished),5)
         
         tp.close()
         tp=ThreadPool('test', print_number, 5)

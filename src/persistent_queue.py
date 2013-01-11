@@ -81,6 +81,17 @@ class PersistentFIFO():
             return None
         return self.db[str(self.bottom)]
     
+    def peekall(self):
+        elems=[]
+        index=self.bottom
+        while index!= self.top:
+            elems.append(self.db[str(index)])
+            index+=1
+            if index>self.limit:
+                index=0
+        return elems
+        
+    
     def appendleft(self,item):
         idx=self.bottom-1
         if idx<0:
@@ -312,7 +323,7 @@ class Worker(threading.Thread):
                 args, tid = self.tasks.get()
             except Interrupted:
                 log.info('Queue interrrupted, exiting thread %s' %threading.current_thread().name)
-                break
+                return
             try: 
                 self.callable(*args, context=self)
             except Interrupted:
