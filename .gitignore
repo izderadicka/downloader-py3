@@ -43,3 +43,6 @@ src/plugins/trance.py
 .settings
 test_data/share_send.html
 src/plugins/test_cookie.py
+test_data/verzend.html
+test_data/loadto.html
+test_data/verzend2.html
