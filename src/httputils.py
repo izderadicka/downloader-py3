@@ -131,7 +131,7 @@ class HTTPClient:
         self.sleeper=Sleeper()
         self.timeout=timeout
     
-    class Error(BaseException): pass
+    class Error(Exception): pass
     class AdditionalHeaders(urllib2.BaseHandler):
         def http_request(self, req):
             req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0')
@@ -243,11 +243,14 @@ class LinksSpider:
                 else:
                     restored_url= self.url_restored(restored_url)
                 url= restored_url or url
-       
+        
+        wait=client.max_wait_between_requests
+        client.max_wait_between_requests=max(3, round(wait/10.0))
         self.page=client.load_page(url)
         if self.require_login(self.page):
             self.login()
             self.page=client.load_page(url)
+        client.max_wait_between_requests=wait
         self.curr_url=url
         self.links_generator=self.next_link(self.page)
         self.stopping=False
