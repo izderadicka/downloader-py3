@@ -132,6 +132,7 @@ class HTTPClient:
         self.timeout=timeout
     
     class Error(Exception): pass
+    
     class AdditionalHeaders(urllib2.BaseHandler):
         def http_request(self, req):
             req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0')
@@ -181,6 +182,8 @@ class HTTPClient:
                 res=self.opener.open(req, timeout=self.timeout)
                 break
             except (IOError, urllib2.HTTPError, BadStatusLine, IncompleteRead, socket.timeout) as e:
+                if isinstance(e, urllib2.HTTPError) and hasattr(e,'code') and str(e.code)=='404':
+                    raise NotFound('Url %s not found'%url)
                 pause=self._get_random_interval(self.average_wait_between_requests, self.max_wait_between_requests)
                 logging.warn('IO or HTTPError (%s) while trying to get url %s, will retry in %f secs' % (str(e),url, pause))
                 retries-=1
@@ -214,6 +217,8 @@ class HTTPClient:
     
     def stop(self):
         self.sleeper.stop()
+        
+class NotFound(HTTPClient.Error): pass
 
 
 class TestSpider():

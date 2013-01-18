@@ -131,7 +131,7 @@ def run(plugin, base_dir, options):
             logging.info('Waiting for threads to complete')
             pool.join(not options.daemon)
     except Interrupted:
-        log.info("Interruped at early stage")
+        logging.info("Interruped at early stage")
     except Exception:
         logging.exception("Downloader run exceeds with error")
         return True
@@ -203,6 +203,7 @@ def main():
         print('The output directory %s does not exists, exiting' % base_dir, file=sys.stderr)
         sys.exit(3)
     if options.daemon:
+        logging.info("Started daemon with encoding %s", sys.getdefaultencoding())
         def get_id(name, fn):
             if not name:
                 return
