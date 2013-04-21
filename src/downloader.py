@@ -94,12 +94,13 @@ def init (plugin, base_dir, options):
         
     plugin.options=options
     plugin.BASE_DIR=base_dir
-    if hasattr(plugin, 'init_plugin'):
-        plugin.init_plugin()
+    
     
 def run(plugin, base_dir, options):
     
-    
+    if hasattr(plugin, 'init_plugin'):
+        plugin.init_plugin()
+        
     pool=None
     try:
         client=HTTPClient(options.proxy, options.no_proxy, plugin.REPEATS,plugin.MEAN_WAIT, plugin.MAX_WAIT)
@@ -142,6 +143,8 @@ def run(plugin, base_dir, options):
         raise e
     finally:
         signal.signal(signal.SIGUSR1, signal.SIG_IGN)
+        if hasattr(plugin, 'close_plugin'):
+            plugin.close_plugin()
         
     
 def main(): 
@@ -178,7 +181,7 @@ def main():
             sys.exit(4)  
         
     opt_parser=OptionParser("%s plugin|--kill|--stop options directory_to_store" %sys.argv[0])
-    opt_parser.add_option('--proxy', help="HTTP proxy to use, otherwise system wise setting will ")
+    opt_parser.add_option('--proxy', help="HTTP proxy to use, otherwise system  setting is used")
     opt_parser.add_option('--no-proxy', dest='no_proxy', action='store_true', help='Do not use proxy, even if set in system')
     opt_parser.add_option('-r', '--resume', action='store_true', help='Resumes form from last run - starts on last unfinished page '+
                           'and restores queue of unfinished downloads')
@@ -203,7 +206,7 @@ def main():
         print('The output directory %s does not exists, exiting' % base_dir, file=sys.stderr)
         sys.exit(3)
     if options.daemon:
-        logging.info("Started daemon with encoding %s", sys.getdefaultencoding())
+        
         def get_id(name, fn):
             if not name:
                 return
@@ -229,6 +232,7 @@ def main():
         #context_args.update({'stdout': sys.stdout, 'stderr':sys.stderr})
         with DaemonContext(**context_args):
             init(plugin, base_dir, options)
+            logging.info("Started daemon with encoding %s", sys.getdefaultencoding())
             errors=0
             while True:
                 was_error=run(plugin, base_dir, options)  
@@ -236,6 +240,7 @@ def main():
                     errors=0
                     to_sleep=int(options.continue_after or 0)*60 or 3600
                     logging.info("Finished a run, will wait %d", to_sleep)
+                    # run task on finish
                 else:
                     errors+=1
                     limit=10
