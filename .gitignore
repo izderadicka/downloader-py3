@@ -46,3 +46,5 @@ src/plugins/test_cookie.py
 test_data/verzend.html
 test_data/loadto.html
 test_data/verzend2.html
+src/plugins/trance_db
+src/plugins/trance.csv
