@@ -18,6 +18,8 @@ from persistent_queue import Sleeper, Interrupted
 import socket
 import signal
 
+PARSER='lxml'#'html5lib'#'html.parser'#'lxml'
+
 
 class Timeout():
     """Timeout class using ALARM signal"""
@@ -88,7 +90,7 @@ class HTTPEquivProcessor(BaseHandler):
             r=ResponseProxy(response)
            
             try:
-                pg=BeautifulSoup(r, 'lxml')
+                pg=BeautifulSoup(r, PARSER)
                 if pg.head:
                     headers =pg.head.find_all('meta', {'http-equiv':True})
                     for h in headers:
@@ -212,7 +214,7 @@ class HTTPClient:
         data=decode_data(res)
             
         logging.debug('Loaded page from url %s' % url)
-        pg=BeautifulSoup(data, 'lxml')
+        pg=BeautifulSoup(data, PARSER)
         return pg
     
     def stop(self):
@@ -225,7 +227,7 @@ class TestSpider():
     """ Mixin for UnitTests"""
     def __init__(self, file_name):
         f=open(file_name)
-        self.page=BeautifulSoup(f.read(), 'lxml')
+        self.page=BeautifulSoup(f.read(), PARSER)
         self.links_generator=self.next_link(self.page)
         self.stopping=False
     def next_page(self):
