@@ -19,7 +19,7 @@ import socket
 import signal
 
 PARSER='lxml'#'html5lib'#'html.parser'#'lxml'
-# Will it help with read timeout?
+# Will this help with read timeout?
 socket.setdefaulttimeout(120)
 
 class Timeout():
