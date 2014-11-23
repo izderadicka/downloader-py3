@@ -8,7 +8,7 @@ page.onError = function(msg,trace) {
 //console.log('Error: '+msg);
 }
 
-
+page.settings.resourceTimeout = 60000;
 
 page.open(url, function (status) {
    
