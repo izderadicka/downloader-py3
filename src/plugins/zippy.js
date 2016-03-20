@@ -13,9 +13,11 @@ page.settings.resourceTimeout = 60000;
 page.open(url, function (status) {
    
     var result=page.evaluate( function () { 
-    	
-    	return  document.getElementById('downloadB').href ||
-    	document.querySelector('img[src="/images/download.png"]').parentElement.href
+    	try {
+    	return document.getElementById('dlbutton').href;
+    	} catch (e) {
+    	return  document.querySelector('img[src="/images/download.png"]').parentElement.href
+    	}
     }); 
     if (result) {
     	console.log(result);

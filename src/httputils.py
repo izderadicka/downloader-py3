@@ -186,6 +186,7 @@ class HTTPClient:
                 break
             except (IOError, urllib2.HTTPError, BadStatusLine, IncompleteRead, socket.timeout) as e:
                 if isinstance(e, urllib2.HTTPError) and hasattr(e,'code') and str(e.code)=='404':
+                    logging.warn('Url %s not found\n%s', url, res.read())
                     raise NotFound('Url %s not found'%url)
                 pause=self._get_random_interval(self.average_wait_between_requests, self.max_wait_between_requests)
                 logging.warn('IO or HTTPError (%s) while trying to get url %s, will retry in %f secs' % (str(e),url, pause))
@@ -235,6 +236,9 @@ class TestSpider():
         return False
 
 class SkipLink(Exception):
+    pass
+
+class SessionExpired(Exception):
     pass
 
 class LinksSpider:
@@ -292,6 +296,9 @@ class LinksSpider:
                 next_link=next(self.links_generator)
                 return self.postprocess_link(*next_link)
                 break
+            except SessionExpired:
+                self.login()
+                return self.postprocess_link(*next_link)
             except StopIteration:
                 if not self.next_page():
                     raise StopIteration

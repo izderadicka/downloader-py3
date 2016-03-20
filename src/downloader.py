@@ -134,7 +134,7 @@ def run(plugin, base_dir, options):
     except Interrupted:
         logging.info("Interruped at early stage")
     except Exception:
-        logging.exception("Downloader run exceeds with error")
+        logging.exception("Downloader run exits with error")
         return True
     except (SystemExit, KeyboardInterrupt) as e:
         logging.info("terminating by %s", e)

@@ -12,7 +12,7 @@ import logging
 
 
 class JSEngine(object):
-    def __init__(self, script, page, link):
+    def __init__(self, script, page, link, timeout=120):
         if not script.startswith(os.sep):
             self.script=os.path.join(os.path.split(__file__)[0], script)
         else:
@@ -20,6 +20,7 @@ class JSEngine(object):
         base_tag=page.new_tag('base', href=link);
         page.head.insert(0, base_tag)
         self.page=page
+        self.timeout=timeout
         
     def eval(self):
         f,fname=tempfile.mkstemp('.html',  text=True)
@@ -28,7 +29,8 @@ class JSEngine(object):
             f.write(str(self.page))
         try:
             #p=subprocess.Popen()
-            res=subprocess.check_output(['phantomjs', '--load-images=no', self.script, fname])
+            res=subprocess.check_output(['phantomjs', '--load-images=no', 
+                '--disk-cache=true', '--max-disk-cache-size=10000', self.script, fname], timeout=self.timeout)
             res=str(res, 'UTF8').strip()
             if len(res) and res.startswith('http'):
                 return res
